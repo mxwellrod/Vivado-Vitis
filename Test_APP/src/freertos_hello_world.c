@@ -72,7 +72,7 @@ int main( void ){
 
 
     // GPIO config butttons
-/*     CfgPtr = XGpio_LookupConfig(XGPIO_AXI_BTN_BASEADDR);
+    CfgPtr = XGpio_LookupConfig(XGPIO_AXI_BTN_BASEADDR);
     if(CfgPtr == NULL){
         xil_printf("Error looking up the buttons gpio config\r\n");
         return XST_FAILURE;
@@ -87,12 +87,12 @@ int main( void ){
     if(status != XST_SUCCESS){
         xil_printf("GPIO Initialization of Buttons failed\r\n");
         return XST_FAILURE;
-    }  */
+    } 
 
     // GPIO direction settings leds + buttons
     XGpio_SetDataDirection(&Gpio, LED_CHANNEL, 0x00);  // output
     XGpio_SetDataDirection(&Gpio, SW_CHANNEL, 0xFF); // input
-/*     XGpio_SetDataDirection(&Gpio_btns, BTN_CHANNEL, 0xFF); // input */
+    XGpio_SetDataDirection(&Gpio_btns, BTN_CHANNEL, 0xFF); // input
 
 	/* Task Creation */
 	xTaskCreate( 	checkGPIOs_Task, 					/* The function that implements the task. */
@@ -125,15 +125,13 @@ static void checkGPIOs_Task( void *pvParameters )
     while (1) {
         
         swState = XGpio_DiscreteRead(&Gpio, SW_CHANNEL);
-        printf("Switch: %08x\r\n", swState);
-        XGpio_DiscreteWrite(&Gpio, LED_CHANNEL, swState);
-
-        /* btnState = XGpio_DiscreteRead(&Gpio_btns, BTN_CHANNEL);
+        btnState = XGpio_DiscreteRead(&Gpio_btns, BTN_CHANNEL);
         if(btnState > 0){
             ledValue = swState;
         }else{
             ledValue = 0x0000;
-        } */
+        }
+        XGpio_DiscreteWrite(&Gpio, LED_CHANNEL, ledValue);
         vTaskDelay(x100ms);
     }
 
