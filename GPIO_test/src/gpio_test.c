@@ -50,7 +50,7 @@ int main( void ){
     int status = 0;
     XGpio_Config *CfgPtr;
 
-    xil_printf( "freeRTOS main. OCM demo\r\n" );
+    xil_printf("MAIN of GPIO test. Starting GPIO config...\r\n");
 
     // GPIO config leds
     CfgPtr = XGpio_LookupConfig(XGPIO_AXI_LED_BASEADDR);
@@ -58,14 +58,13 @@ int main( void ){
         xil_printf("Error looking up the leds gpio config\r\n");
         return XST_FAILURE;
     }
-
-    status = XGpio_CfgInitialize(&Gpio, CfgPtr, XGPIO_AXI_LED_BASEADDR);
-
+    status = XGpio_CfgInitialize(&Gpio, CfgPtr, CfgPtr -> BaseAddress);
     if(status != XST_SUCCESS){
         xil_printf("Config Initialization of leds failed\r\n");
         return XST_FAILURE;
     }
-    status = XGpio_Initialize(&Gpio, XGPIO_AXI_LED_BASEADDR);
+
+    status = XGpio_Initialize(&Gpio, CfgPtr -> BaseAddress);
     if(status != XST_SUCCESS){
         xil_printf("GPIO Initialization failed\r\n");
         return XST_FAILURE;
@@ -78,13 +77,13 @@ int main( void ){
         xil_printf("Error looking up the buttons gpio config\r\n");
         return XST_FAILURE;
     }
-    status = XGpio_CfgInitialize(&Gpio_btns, CfgPtr, XGPIO_AXI_BTN_BASEADDR);
+    status = XGpio_CfgInitialize(&Gpio_btns, CfgPtr, CfgPtr -> BaseAddress);
     if(status != XST_SUCCESS){
         xil_printf("Config initialization of Buttons failed\r\n");
         return XST_FAILURE;
     }
 
-    status = XGpio_Initialize(&Gpio_btns, XGPIO_AXI_BTN_BASEADDR);
+    status = XGpio_Initialize(&Gpio_btns, CfgPtr -> BaseAddress);
     if(status != XST_SUCCESS){
         xil_printf("GPIO Initialization of Buttons failed\r\n");
         return XST_FAILURE;
@@ -130,7 +129,6 @@ static void checkGPIOs_Task( void *pvParameters )
         if(btnState > 0){
             ledValue = swState;
         }else{
-
             ledValue = 0x0000;
         }
         XGpio_DiscreteWrite(&Gpio, LED_CHANNEL, ledValue);
