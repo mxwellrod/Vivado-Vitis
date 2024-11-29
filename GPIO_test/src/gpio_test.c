@@ -19,8 +19,6 @@
 #include "xil_mmu.h"
 #include "xuartps.h"
 
-
-
 /*---------------------- GPIO Parameters---------------------*/
 #define LED_CHANNEL 1
 #define SW_CHANNEL 2
@@ -128,14 +126,15 @@ static void checkGPIOs_Task( void *pvParameters )
     while (1) {
         
         swState = XGpio_DiscreteRead(&Gpio, SW_CHANNEL);
-        printf("Switches State: %08x\r\n", swState);
         btnState = XGpio_DiscreteRead(&Gpio_btns, BTN_CHANNEL);
-        printf("Buttons State: %08x\r\n", btnState);
-        if(btnState > 0){ // any button pressed -> Blink first LED
-            XGpio_DiscreteWrite(&Gpio, LED_CHANNEL, LED1|=0b0001);
-            vTaskDelay(x100ms);     
+        if(btnState > 0){
+            ledValue = swState;
+            XGpio_DiscreteWrite(&Gpio, LED_CHANNEL, LED1|=0b0001);  
+        }else{
+
+            ledValue = 0x0000;
         }
-        XGpio_DiscreteWrite(&Gpio, LED_CHANNEL, LED1&=0b0000);
+        XGpio_DiscreteWrite(&Gpio, LED_CHANNEL, ledValue);
         vTaskDelay(x100ms);
     }
 
