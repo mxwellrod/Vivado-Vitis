@@ -129,7 +129,6 @@ static void checkGPIOs_Task( void *pvParameters )
         btnState = XGpio_DiscreteRead(&Gpio_btns, BTN_CHANNEL);
         if(btnState > 0){
             ledValue = swState;
-            XGpio_DiscreteWrite(&Gpio, LED_CHANNEL, LED1|=0b0001);  
         }else{
 
             ledValue = 0x0000;
