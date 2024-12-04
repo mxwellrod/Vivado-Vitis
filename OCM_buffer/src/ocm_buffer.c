@@ -1,8 +1,8 @@
 /*
 *
 * Creation of OCM buffer for testing purposes. If any button is pressed then buffer overwrites buffer value with -value
-* Use within core0 running linux
-*
+* If booted from linux -> OCM is relocated for core1 as it is in linux(all in high part)
+* If booted indepent -> OCM have its default address configuration.
 */
 
 /* FreeRTOS includes. */
@@ -31,13 +31,13 @@ XGpio Gpio_btns; // drivers instances defined globally for task
 
 
 /*---------------------- OCM Parameters---------------------*/
-#define OCM_BASE_ADDR_LOW 0x00000000  // freeRTOS base ADDR for 3 low address OCM blocks(OCM0 - OCM2)
-#define OCM_BASE_ADDR_HIGH 0xFFFF0000 // freeRTOS base ADDR for last OCM block located on a high address(OCM3)
+#define OCM_BASE_ADDR_LOW 0xFFFC0000  // freeRTOS base ADDR for 3 low address OCM blocks (OCM0 - OCM2 or OCM0 - OCM3 if booted from linux)
+//#define OCM_BASE_ADDR_HIGH 0xFFFF0000 // freeRTOS base ADDR for last OCM block located on a high address(OCM3)
 #define MAX 65536                     // mem vector max size for all OCM -> (256 KB / 4 bytes per float)
 #define MAX_HIGH 16384               // mem high max size -> (64 KB / 4 bytes per float)
 #define MEM_SIZE (MAX * sizeof(float))  // Vector size in bytes
 volatile float *mem_low = (float *)OCM_BASE_ADDR_LOW; // mem_low points to low ocm base addr
-volatile float *mem_high = (float *)OCM_BASE_ADDR_HIGH; //mem high points to high ocm base addr
+//volatile float *mem_high = (float *)OCM_BASE_ADDR_HIGH; //mem high points to high ocm base addr
 /*-----------------------------------------------------------*/
 
 
@@ -99,13 +99,26 @@ int main( void ){
         xil_printf("GPIO Initialization of Buttons failed\r\n");
         return XST_FAILURE;
     } 
-
+    
     // GPIO direction settings leds + buttons
     XGpio_SetDataDirection(&Gpio, CH1, 0x00);  // output
     XGpio_SetDataDirection(&Gpio, CH2, 0xFF); // input
     XGpio_SetDataDirection(&Gpio_btns, CH1, 0xFF); // input
 
     xil_printf("GPIO config finished. Task creation...\r\n");
+
+
+
+    // Prueba de escritura en el main -> La parte baja no va -> Intento escribir solo desde arriba
+    for(int i = 0; i < MAX; i++){ // mem low writting ends on element #49152
+        mem_low[i] = -((float)i);
+    }
+
+/*     for(int j = MAX - MAX_HIGH; j < MAX; j++){ // neccesary if core1 is booted independent
+        mem_high[j - (MAX - MAX_HIGH)] = -((float)j);
+    } */
+
+
 
 
     /* Task Creation */
@@ -117,13 +130,13 @@ int main( void ){
 					&xThread1 );
 
         /* Task Creation */
-	xTaskCreate( 	checkSWS_Task, 					// The function that implements the task. 
+/* 	xTaskCreate( 	checkSWS_Task, 					// The function that implements the task. 
 					( const char * ) "Thread2", 		// Text name for the task, provided to assist debugging only. 
 					configMINIMAL_STACK_SIZE, 	// The stack allocated to the task. 
 					NULL, 						// The task parameter is not used, so set to NULL. 
 					tskIDLE_PRIORITY,		// The task runs at the idle priority
 					&xThread2 );
-
+ */
 
 	/* Start the tasks and timer running. */
 	vTaskStartScheduler();
@@ -141,9 +154,17 @@ static void checkBTNS_Task( void *pvParameters ){
     uint32_t btnState = 0;
 
     while(1){
-        btnState = XGpio_DiscreteRead(&Gpio_btns, CH1); // read buttons state
 
-        if(btnState > 0){ // any button pressed -> overwrite mem vector with -i value
+        XGpio_DiscreteWrite(&Gpio, CH1, 0x0F); // read complete -> turn on leds for a brief moment
+        vTaskDelay(x500ms);
+        XGpio_DiscreteWrite(&Gpio, CH1, 0x00); // turn off        
+        vTaskDelay(x500ms);
+        
+/*         btnState = XGpio_DiscreteRead(&Gpio_btns, CH1); // read buttons state
+
+        if(btnState > 0){ // any button pressed -> overwrite mem vector with -i values
+
+
             for(int i = 0; i < MAX - MAX_HIGH; i++){ // mem low writting ends on element #49152
                 mem_low[i] = -((float)i);
             }
@@ -153,12 +174,12 @@ static void checkBTNS_Task( void *pvParameters ){
             }
 
             xil_printf("Memory updated on core1.\n");
-            XGpio_DiscreteWrite(&Gpio, CH1, 0x0F); // read complete -> turn on leds for a brief moment
+            
 
-        }
+        } */
 
-        vTaskDelay(x100ms);
-        XGpio_DiscreteWrite(&Gpio, CH1, 0x00); // read complete -> turn on leds for a brief moment
+        //vTaskDelay(x100ms);
+        //XGpio_DiscreteWrite(&Gpio, CH1, 0x00); // turn off
     }
 
 }
@@ -172,16 +193,16 @@ static void checkSWS_Task( void *pvParameters ){
         if(swState > 0){
             xil_printf("switch enabled -> Print mem values");
         
-            // print mem_low -> works but too long
+            // print mem_low
             /* for (int i = 0; i < MAX - MAX_HIGH; i++) {
                 printf("mem_low[%d] = %.2f\n", i, mem_low[i]);  // %.2f -> two decimals
             } */
 
             // print mem_high (OCM3)
-            for (int j = 0; j < MAX_HIGH; j++) {
+/*             for (int j = 0; j < MAX_HIGH; j++) {
                 printf("mem_high[%d] = %.2f\n", j, mem_high[j]);  // %.2f -> two decimals
-            }
-            
+            } */
+
         }
 
         vTaskDelay(x500ms);
